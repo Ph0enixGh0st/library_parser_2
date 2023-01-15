@@ -1,5 +1,5 @@
 import argparse, logging, os, time
-import pickle, requests
+import json, pickle, requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.error import HTTPError
@@ -40,6 +40,19 @@ def get_book_link_credentials(soup, book_link):
     book_credentials.append(author)
 
     return book_credentials
+
+
+def get_comments(soup):
+
+    comments = soup.select('span.black')
+    all_comments = [comment.text for comment in comments]
+
+    return all_comments
+
+def get_genres(soup):
+
+    genres = soup.select('span.d_book a')
+    return [genre.text for genre in genres]
 
 
 def download_txt(url, filename, folder='books/'):
@@ -89,6 +102,7 @@ def main():
     #end_id = end_id + 1
 
     n = 0
+    books_info_all = []
 
     for page in range (0, 6):
         if not page:
@@ -109,10 +123,26 @@ def main():
                 print(n, book_link, ' making soup')
 
                 soup2 = make_soup(book_link)
-                url, filename, book_cover_url, author = get_book_link_credentials(soup2, book_link)
+                url, title, book_cover_url, author = get_book_link_credentials(soup2, book_link)
 
-                download_txt(url, f'{n}_{filename}')
-                download_book_cover(f'{n}_{filename}', book_cover_url)
+                comments = get_comments(soup2)
+                genres = get_genres(soup2)
+                download_txt(url, f'{n}_{title}')
+                download_book_cover(f'{n}_{title}', book_cover_url)
+
+                books_info = {
+                    'title': title,
+                    'author': author,
+                    'img_source': book_cover_url,
+                    'book_path': url,
+                    'comments': comments,
+                    'genres': genres,
+                }
+
+                books_info_all.append(books_info)
+
+                with open('books_about', 'w', encoding='utf8') as json_file:
+                    json.dump(books_info_all, json_file, ensure_ascii=False)
 
         except requests.exceptions.ConnectionError:
             logging.exception('Connection issues, will retry after timeout.')
