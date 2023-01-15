@@ -115,11 +115,11 @@ def main():
             book_page = requests.get(url)
             book_page.raise_for_status()
             soup = BeautifulSoup(book_page.text, 'lxml')
-            links = soup.find_all('div', class_='bookimage')
+            links = soup.select('.bookimage a')
 
             for link in links:
                 n += 1
-                book_link = urljoin(f'https://tululu.org/l55/', link.find('a').attrs['href'])
+                book_link = urljoin(f'https://tululu.org/l55/', link.get('href'))
                 print(n, book_link, ' making soup')
 
                 soup2 = make_soup(book_link)
