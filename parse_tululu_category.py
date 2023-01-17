@@ -1,5 +1,5 @@
 import argparse, logging, os, time
-import json, pickle, requests
+import json, requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.error import HTTPError
@@ -79,7 +79,29 @@ def download_book_cover(filename, book_cover_url, folder='images/'):
 
 def main():
 
+    parser = argparse.ArgumentParser(description="The script downloads books from 'tululu.org' portal")
+    parser.add_argument('-s', '--start_page', default=0, help="Starting page", type=int)
+    parser.add_argument('-e', '--end_page', default=700, help="Ending page", type=int)
+    parser.add_argument('--skip_imgs', default=False, help="Turn off images download", type=bool)
+    parser.add_argument('--skip_txt', default=False, help="Turn off texts download", type=bool)
+    parser.add_argument('--dest_folder', default='', help="Destination folder path", type=str)
+    parser.add_argument('--json_path', default='', help="JSON folder path", type=str)
+    args = parser.parse_args()
+
+    start_page = args.start_page
+    end_page = args.end_page + 1
+    dest_folder = args.dest_folder
+    json_path = args.json_path
+    skip_imgs = args.skip_imgs
+    skip_txt = args.skip_txt
+
+    if dest_folder:
+        os.chdir(dest_folder)
+
     folders = ['books', 'images']
+
+    if json_path:
+        folders.append(json_path)
 
     for folder in folders:
 
@@ -92,15 +114,6 @@ def main():
         except OSError as error:
             print("Folder '%s' can not be created")
 
-    parser = argparse.ArgumentParser(description="The script downloads books from 'tululu.org' portal")
-    parser.add_argument('-s', '--start_page', default=0, help="Starting page", type=int)
-    parser.add_argument('-e', '--end_page', default=700, help="Ending page", type=int)
-    args = parser.parse_args()
-
-    start_page = args.start_page
-    end_page = args.end_page + 1
-
-    n = 0
     books_info_all = []
 
     for page in range (start_page, end_page):
@@ -114,21 +127,20 @@ def main():
             book_page = requests.get(url)
             book_page.raise_for_status()
             soup = BeautifulSoup(book_page.text, 'lxml')
-            links = soup.select('.bookimage a')
-            print(links)
+            books_links = soup.select('.bookimage a')
 
-            for link in links:
-                n += 1
+            for link in books_links:
+
                 book_link = urljoin(url, link.get('href'))
-                print(n, book_link, ' making soup')
+                book_soup = make_soup(book_link)
+                url, title, book_cover_url, author = get_book_link_credentials(book_soup, book_link)
+                comments = get_comments(book_soup)
+                genres = get_genres(book_soup)
 
-                soup2 = make_soup(book_link)
-                url, title, book_cover_url, author = get_book_link_credentials(soup2, book_link)
-
-                comments = get_comments(soup2)
-                genres = get_genres(soup2)
-                download_txt(url, f'{n}_{title}')
-                download_book_cover(f'{n}_{title}', book_cover_url)
+                if not skip_txt:
+                    download_txt(url, f'{n}_{title}')
+                if not skip_imgs:
+                    download_book_cover(f'{n}_{title}', book_cover_url)
 
                 books_info = {
                     'title': title,
@@ -141,7 +153,7 @@ def main():
 
                 books_info_all.append(books_info)
 
-                with open('books_about', 'w', encoding='utf8') as json_file:
+                with open(f"{os.path.join(json_path, 'books_about')}", 'w', encoding='utf8') as json_file:
                     json.dump(books_info_all, json_file, ensure_ascii=False)
 
         except requests.exceptions.ConnectionError:
