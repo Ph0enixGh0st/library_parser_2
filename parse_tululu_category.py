@@ -92,34 +92,34 @@ def main():
         except OSError as error:
             print("Folder '%s' can not be created")
 
-    #parser = argparse.ArgumentParser(description="The script downloads books from tululu portal")
-    #parser.add_argument("-s", "--start_id", default=1, help="Starting book id", type=int)
-    #parser.add_argument("-e", "--end_id", default=2, help="Ending book id", type=int)
-    #args = parser.parse_args()
+    parser = argparse.ArgumentParser(description="The script downloads books from 'tululu.org' portal")
+    parser.add_argument('-s', '--start_page', default=0, help="Starting page", type=int)
+    parser.add_argument('-e', '--end_page', default=700, help="Ending page", type=int)
+    args = parser.parse_args()
 
-    #start_id = args.start_id
-    #end_id = args.end_id
-    #end_id = end_id + 1
+    start_page = args.start_page
+    end_page = args.end_page + 1
 
     n = 0
     books_info_all = []
 
-    for page in range (0, 6):
+    for page in range (start_page, end_page):
+
         if not page:
             url = f'https://tululu.org/l55'
         else:
             url = f'https://tululu.org/l55/{page}'
 
         try:
-
             book_page = requests.get(url)
             book_page.raise_for_status()
             soup = BeautifulSoup(book_page.text, 'lxml')
             links = soup.select('.bookimage a')
+            print(links)
 
             for link in links:
                 n += 1
-                book_link = urljoin(f'https://tululu.org/l55/', link.get('href'))
+                book_link = urljoin(url, link.get('href'))
                 print(n, book_link, ' making soup')
 
                 soup2 = make_soup(book_link)
@@ -147,7 +147,7 @@ def main():
         except requests.exceptions.ConnectionError:
             logging.exception('Connection issues, will retry after timeout.')
             print('Connection issues, will retry after timeout.')
-            time.sleep(30)
+            time.sleep(60)
         except requests.exceptions.HTTPError:
             print('HTTP Error, broken link or redirect')
         except TypeError:
