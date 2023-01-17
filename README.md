@@ -15,7 +15,7 @@ Then use `pip` (or `pip3`, if there is a conflict with Python2) to install depen
 pip install -r requirements.txt
 ```
 
-# tululu.py and how to run it
+# parse_tululu_category.py and how to run it
 The script downloads books from tululu.org and saves them to 'books' folder from where the script is run.
 When running the script book text files and book cover image files will be created.
 
