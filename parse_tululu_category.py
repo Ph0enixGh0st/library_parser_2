@@ -114,18 +114,19 @@ def main():
         except OSError as error:
             print("Folder '%s' can not be created")
 
-    books_info_all = []
+    book_properties_all = []
 
-    for page in range (start_page, end_page):
+    for page_number in range (start_page, end_page):
 
-        if not page:
+        if not page_number:
             url = f'https://tululu.org/l55'
         else:
-            url = f'https://tululu.org/l55/{page}'
+            url = f'https://tululu.org/l55/{page_number}'
 
         try:
             book_page = requests.get(url)
             book_page.raise_for_status()
+            check_for_redirect(book_page)
             soup = BeautifulSoup(book_page.text, 'lxml')
             books_links = soup.select('.bookimage a')
 
@@ -142,7 +143,7 @@ def main():
                 if not skip_imgs:
                     download_book_cover(f'{n}_{title}', book_cover_url)
 
-                books_info = {
+                book_properties = {
                     'title': title,
                     'author': author,
                     'img_source': book_cover_url,
@@ -151,19 +152,22 @@ def main():
                     'genres': genres,
                 }
 
-                books_info_all.append(books_info)
+                book_properties_all.append(book_properties)
 
-                with open(f"{os.path.join(json_path, 'books_about')}", 'w', encoding='utf8') as json_file:
-                    json.dump(books_info_all, json_file, ensure_ascii=False)
+            with open(os.path.join(json_path, 'books_about'), 'w', encoding='utf8') as json_file:
+                json.dump(book_properties_all, json_file, ensure_ascii=False)
 
         except requests.exceptions.ConnectionError:
             logging.exception('Connection issues, will retry after timeout.')
             print('Connection issues, will retry after timeout.')
             time.sleep(60)
+
         except requests.exceptions.HTTPError:
             print('HTTP Error, broken link or redirect')
+
         except TypeError:
             print(f'Unable to make soup for book {n} due to insufficient data')
+            
         except IndexError:
             print(f'Unable to download book {n} due to missing link')
 
