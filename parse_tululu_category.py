@@ -114,7 +114,7 @@ def main():
         except OSError as error:
             print("Folder '%s' can not be created")
 
-    book_properties_all = []
+    all_books_properties = []
 
     for page_number in range (start_page, end_page):
 
@@ -138,10 +138,19 @@ def main():
                 comments = get_comments(book_soup)
                 genres = get_genres(book_soup)
 
-                if not skip_txt:
-                    download_txt(url, f'{n}_{title}')
-                if not skip_imgs:
-                    download_book_cover(f'{n}_{title}', book_cover_url)
+                try:
+                    if not skip_txt:
+                        download_txt(url, f'{n}_{title}')
+                    if not skip_imgs:
+                        download_book_cover(f'{n}_{title}', book_cover_url)
+
+                except requests.exceptions.ConnectionError:
+                    logging.exception('Connection issues, will retry after timeout.')
+                    print('Connection issues, will retry after timeout.')
+                    time.sleep(60)
+
+                except requests.exceptions.HTTPError:
+                    print('HTTP Error, broken link or redirect')
 
                 book_properties = {
                     'title': title,
@@ -152,10 +161,10 @@ def main():
                     'genres': genres,
                 }
 
-                book_properties_all.append(book_properties)
+                all_books_properties.append(book_properties)
 
             with open(os.path.join(json_path, 'books_about'), 'w', encoding='utf8') as json_file:
-                json.dump(book_properties_all, json_file, ensure_ascii=False)
+                json.dump(all_books_properties, json_file, ensure_ascii=False)
 
         except requests.exceptions.ConnectionError:
             logging.exception('Connection issues, will retry after timeout.')
