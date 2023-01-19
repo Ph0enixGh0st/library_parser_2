@@ -131,14 +131,13 @@ def main():
             books_links = soup.select('.bookimage a')
 
             for link in books_links:
-
-                book_link = urljoin(url, link.get('href'))
-                book_soup = make_soup(book_link)
-                url, title, book_cover_url, author = get_book_link_credentials(book_soup, book_link)
-                comments = get_comments(book_soup)
-                genres = get_genres(book_soup)
-
                 try:
+                    book_link = urljoin(url, link.get('href'))
+                    book_soup = make_soup(book_link)
+                    url, title, book_cover_url, author = get_book_link_credentials(book_soup, book_link)
+                    comments = get_comments(book_soup)
+                    genres = get_genres(book_soup)
+
                     if not skip_txt:
                         download_txt(url, f'{n}_{title}')
                     if not skip_imgs:
@@ -176,7 +175,7 @@ def main():
 
         except TypeError:
             print(f'Unable to make soup for book {n} due to insufficient data')
-            
+
         except IndexError:
             print(f'Unable to download book {n} due to missing link')
 
